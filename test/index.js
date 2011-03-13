@@ -104,7 +104,11 @@ assert.equal(
 
 assert.equal(100000000000000000001, new gmp.Int(100).pow(10).add("1"));
 
-// new gmp.Int(10).pow(1000000000000000); --> gmp: overflow in mpz type Aborted
+try {
+  new gmp.Int(10).pow(1000000000000000); //--> gmp: overflow in mpz type Aborted
+} catch(e) {
+  assert.equal(e+"", "Error: gmp abort");
+}
 
 
 // chaining

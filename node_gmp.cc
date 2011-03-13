@@ -2,10 +2,50 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <dlfcn.h>
+#include <sys/mman.h>
 #include <iostream>
 
 #include "node_gmp.h"
 
+void node_gmp_replace_abort_cxx() {
+  throw "gmp abort";
+}
+extern "C" {
+  extern void *__gmp_default_allocate(size_t);
+  extern void *__gmp_default_reallocate(void *, size_t, size_t);
+  extern void __gmp_invalid_operation();
+  extern void replace_abort() {
+    node_gmp_replace_abort_cxx();
+  }
+  int abort_replace(void *f) {
+    void ** code = (void **)f;
+    void *abrt_code = dlsym(RTLD_DEFAULT, "dyld_stub_abort");
+    int psize, offset;
+    unsigned long long icrutch, startpoint;
+
+    startpoint = (unsigned long long int) code;
+    if(!abrt_code) abrt_code = dlsym(RTLD_DEFAULT, "abort");
+    if(!abrt_code) abrt_code = (void *)abort;
+    if(!abrt_code) return -1;
+    psize = getpagesize();
+    while(1) {
+      icrutch = (unsigned long long int) code;
+      offset = (icrutch % psize);
+      if(icrutch/psize > startpoint/psize) return -1;
+      if(*code == (void *)abrt_code) break;
+      code++;
+    }
+    if(mprotect((void *)(icrutch - offset), psize,
+                PROT_READ|PROT_WRITE|PROT_EXEC) == 0) {
+      *code = (void *)replace_abort;
+      mprotect((void *)(icrutch - offset), psize, PROT_READ|PROT_EXEC);
+      return 0;
+    }
+    perror("mprotect");
+    return -1;
+  }
+}
 
 using namespace v8;
 using namespace node;
@@ -56,8 +96,11 @@ GInt::Add(const Arguments &args) {
   GETARG(args[0], strtok(*val, "."));
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
-  self->val_ += i;
-
+  try {
+    self->val_ += i;
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
   return args.This();
 }
 
@@ -70,7 +113,11 @@ GInt::Sub(const Arguments &args) {
   GETARG(args[0], strtok(*val, "."));
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
-  self->val_ -= i;
+  try {
+    self->val_ -= i;
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -84,7 +131,11 @@ GInt::Mul(const Arguments &args) {
   GETARG(args[0], strtok(*val, "."));
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
-  self->val_ *= i;
+  try {
+    self->val_ *= i;
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -98,7 +149,11 @@ GInt::Div(const Arguments &args) {
   GETARG(args[0], strtok(*val, "."));
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
-  self->val_ /= i;
+  try {
+    self->val_ /= i;
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -113,14 +168,18 @@ GInt::Pow(const Arguments &args) {
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
 
-  mpz_t c;
-  mpz_init(c);
+  try {
+    mpz_t c;
+    mpz_init(c);
 
-  mpz_pow_ui(c, self->val_.get_mpz_t(), (long)args[0]->Int32Value());
+    mpz_pow_ui(c, self->val_.get_mpz_t(), (long)args[0]->Int32Value());
 
-  self->val_ = mpz_class(c);
+    self->val_ = mpz_class(c);
 
-  mpz_clear(c);
+    mpz_clear(c);
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -130,8 +189,13 @@ GInt::ToString(const Arguments &args) {
   HandleScope scope;
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
+  Local<String> str;
 
-  Local<String> str = String::New(self->val_.get_str(10).c_str());
+  try {
+    str = String::New(self->val_.get_str(10).c_str());
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
   return scope.Close(str);
 }
 
@@ -167,7 +231,12 @@ GFloat::Add(const Arguments &args) {
   GETARG(args[0], *val);
 
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
-  self->val_ += i;
+
+  try {
+    self->val_ += i;
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -181,7 +250,12 @@ GFloat::Sub(const Arguments &args) {
   GETARG(args[0], *val);
 
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
-  self->val_ -= i;
+
+  try {
+    self->val_ -= i;
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -195,7 +269,12 @@ GFloat::Mul(const Arguments &args) {
   GETARG(args[0], *val);
 
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
-  self->val_ *= i;
+
+  try {
+    self->val_ *= i;
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -209,7 +288,12 @@ GFloat::Div(const Arguments &args) {
   GETARG(args[0], *val);
 
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
-  self->val_ /= i;
+
+  try {
+    self->val_ /= i;
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -224,14 +308,18 @@ GFloat::Pow(const Arguments &args) {
 
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
 
-  mpf_t c;
-  mpf_init(c);
+  try {
+    mpf_t c;
+    mpf_init(c);
 
-  mpf_pow_ui(c, self->val_.get_mpf_t(), (long)args[0]->Int32Value());
+    mpf_pow_ui(c, self->val_.get_mpf_t(), (long)args[0]->Int32Value());
 
-  self->val_ = mpf_class(c);
+    self->val_ = mpf_class(c);
 
-  mpf_clear(c);
+    mpf_clear(c);
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
 
   return args.This();
 }
@@ -252,7 +340,12 @@ GFloat::ToString(const Arguments &args) {
   mp_exp_t exp;
   long int i;
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
-  const char *unfixed = self->val_.get_str(exp,10).c_str();
+  const char *unfixed = NULL;
+  try {
+    unfixed = self->val_.get_str(exp,10).c_str();
+  } catch (char *err) {
+    return ThrowException(Exception::Error(String::New(err)));
+  }
   char *buff = (char *)alloca(abs(exp) + 2 + strlen(unfixed));
   char *cp = buff;
   if(unfixed[0] == '-') { *cp++ = '-'; unfixed++; }
@@ -278,8 +371,6 @@ GFloat::ToString(const Arguments &args) {
 
 void RegisterModule(Handle<Object> target) {
   target->Set(String::NewSymbol("version"), String::New(gmp_version));
-
-  //target->Set(String::NewSymbol("toHex"),   FunctionTemplate::New(ToHex)->GetFunction());
 
   Local<FunctionTemplate> t_int = FunctionTemplate::New(GInt::New);
   t_int->InstanceTemplate()->SetInternalFieldCount(1);
@@ -307,6 +398,20 @@ void RegisterModule(Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t_float, "toValue", GFloat::ToNumber);
 
   target->Set(String::NewSymbol("Float"), t_float->GetFunction());
+
+#ifdef gmp_initialize_abort
+  gmp_initialize_abort(replace_abort);
+#else
+#warning sketchy abort replacements going on
+  if(abort_replace((void *)mpz_init2) ||
+     abort_replace((void *)mpz_realloc) ||
+     abort_replace((void *)mpz_realloc2) ||
+     abort_replace((void *)__gmp_default_allocate) ||
+     abort_replace((void *)__gmp_default_reallocate) ||
+     abort_replace((void *)__gmp_invalid_operation)) {
+    ThrowException(Exception::Error(String::New("node-gmp could not subvert abort")));
+  }
+#endif
 }
 
 NODE_MODULE(gmp, RegisterModule);
