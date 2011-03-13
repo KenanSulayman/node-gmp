@@ -104,9 +104,13 @@ assert.equal(
 
 assert.equal(100000000000000000001, new gmp.Int(100).pow(10).add("1"));
 
-//new gmp.Int(10).pow(1000000000000000); --> gmp: overflow in mpz type Aborted
+// new gmp.Int(10).pow(1000000000000000); --> gmp: overflow in mpz type Aborted
 
 
 // chaining
 assert.equal("25", new gmp.Int("101").add(-1).sub(90.1).mul(5).div(10).pow(2).toString());
 
+assert.equal("2.5", new gmp.Float("2.5").toString());
+assert.equal("0.333333333333333333333", new gmp.Float(1).div(3).toString());
+assert.equal("0.0333333333333333333333", new gmp.Float(1).div(30).toString());
+assert.equal("-123000", new gmp.Float(123).mul(-1000).toString());
