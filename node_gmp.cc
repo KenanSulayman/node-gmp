@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <iostream>
+#include <alloca.h>
 
 #include "node_gmp.h"
 
@@ -18,7 +19,8 @@ extern "C" {
   extern void replace_abort() {
     node_gmp_replace_abort_cxx();
   }
-  int abort_replace(void *f) {
+#define abort_replace(f) abort_replace_func(#f, f)
+  int abort_replace_func(const char *name, void *f) {
     void ** code = (void **)f;
     void *abrt_code = dlsym(RTLD_DEFAULT, "dyld_stub_abort");
     int psize, offset;
@@ -27,12 +29,19 @@ extern "C" {
     startpoint = (unsigned long long int) code;
     if(!abrt_code) abrt_code = dlsym(RTLD_DEFAULT, "abort");
     if(!abrt_code) abrt_code = (void *)abort;
-    if(!abrt_code) return -1;
+    if(!abrt_code) {
+      fprintf(stderr, "abort_replace_func: Could not find abort symbol\n");
+      return -1;
+    }
     psize = getpagesize();
     while(1) {
       icrutch = (unsigned long long int) code;
       offset = (icrutch % psize);
-      if(icrutch/psize > startpoint/psize) return -1;
+      if(icrutch/psize > startpoint/psize) {
+        fprintf(stderr, "abort_replace_func: no abort within first page %s\n",
+                name);
+        return -1;
+      }
       if(*code == (void *)abrt_code) break;
       code++;
     }
@@ -403,7 +412,8 @@ void RegisterModule(Handle<Object> target) {
   gmp_initialize_abort(replace_abort);
 #else
 #warning sketchy abort replacements going on
-  if(abort_replace((void *)mpz_init2) ||
+  if(((sizeof (unsigned long) > sizeof (int)) &&
+      abort_replace((void *)mpz_init2)) ||
      abort_replace((void *)mpz_realloc) ||
      abort_replace((void *)mpz_realloc2) ||
      abort_replace((void *)__gmp_default_allocate) ||
