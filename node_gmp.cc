@@ -256,7 +256,9 @@ GInt::ToString(const Arguments &args) {
 Handle<Value>
 GFloat::New(const Arguments &args) {
   HandleScope scope;
-  mpf_class i = 0;
+  mpf_class i;
+  if(args[1]->IsNumber()) i.set_prec(args[1]->Uint32Value());
+  i = 0;
 
   GETARG(args[0], *val);
 
@@ -268,6 +270,7 @@ GFloat::New(const Arguments &args) {
 
 GFloat::GFloat(mpf_class val): ObjectWrap() {
   val_ = val;
+  val_.set_prec(val.get_prec());
 }
 
 GFloat::~GFloat(){
@@ -279,11 +282,11 @@ Handle<Value>
 GFloat::Add(const Arguments &args) {
   HandleScope scope;
 
+  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   mpf_class i = 0;
+  i.set_prec(self->val_.get_prec());
 
   GETARG(args[0], *val);
-
-  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
 
   evil_try_catch({ self->val_ += i; });
 
@@ -294,11 +297,11 @@ Handle<Value>
 GFloat::Sub(const Arguments &args) {
   HandleScope scope;
 
+  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   mpf_class i = 0;
+  i.set_prec(self->val_.get_prec());
 
   GETARG(args[0], *val);
-
-  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
 
   evil_try_catch({ self->val_ -= i; });
 
@@ -309,11 +312,11 @@ Handle<Value>
 GFloat::Mul(const Arguments &args) {
   HandleScope scope;
 
+  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   mpf_class i = 0;
+  i.set_prec(self->val_.get_prec());
 
   GETARG(args[0], *val);
-
-  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
 
   evil_try_catch({ self->val_ *= i; });
 
@@ -324,11 +327,11 @@ Handle<Value>
 GFloat::Div(const Arguments &args) {
   HandleScope scope;
 
+  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   mpf_class i = 0;
+  i.set_prec(self->val_.get_prec());
 
   GETARG(args[0], *val);
-
-  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
 
   evil_try_catch({ self->val_ /= i; });
 
@@ -346,13 +349,14 @@ GFloat::Pow(const Arguments &args) {
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
 
   evil_try_catch({
+    mp_bitcnt_t prec = self->val_.get_prec();
     mpf_t c;
-    mpf_init(c);
+    mpf_init2(c, prec);
 
-    mpf_pow_ui(c, self->val_.get_mpf_t(), (long)args[0]->Int32Value());
+    mpf_pow_ui(c, self->val_.get_mpf_t(), (double)args[0]->Int32Value());
 
     self->val_ = mpf_class(c);
-
+    self->val_.set_prec(prec);
     mpf_clear(c);
   });
 
