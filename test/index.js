@@ -118,7 +118,11 @@ assert.equal("2.5", new gmp.Float("2.5").toString());
 assert.equal("0.333333333333333333333", new gmp.Float(1).div(3).toString());
 assert.equal("0.0333333333333333333333", new gmp.Float(1).div(30).toString());
 assert.equal("-123000", new gmp.Float(123).mul(-1000).toString());
+assert.equal("923054160315059.179814765320867",
+             new gmp.Float("1234123412341234.123412341234", 2048).div("1.337").toString().replace(/(\.\d{15}).*$/, "$1"));
 
 assert.equal("5/2", new gmp.Rational(2.5).toString());
 assert.equal("3/2", new gmp.Rational("6/4").toString());
 assert.equal("2.5", new gmp.Rational(2.5).toValue());
+
+assert.equal("3.142857142857143", new gmp.Rational("22/7").toValue());
