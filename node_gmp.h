@@ -48,4 +48,22 @@ class GFloat: public node::ObjectWrap {
     mpf_class val_;
 };
 
+class GRational: public node::ObjectWrap {
+  public:
+    ~GRational();
+    GRational(mpq_class num);
+    static Handle<Value> Add(const Arguments &args);
+    static Handle<Value> Sub(const Arguments &args);
+    static Handle<Value> Mul(const Arguments &args);
+    static Handle<Value> Div(const Arguments &args);
+    static Handle<Value> Pow(const Arguments &args);
+    static Handle<Value> ToString(const Arguments &args);
+    static Handle<Value> ToNumber(const Arguments &args);
+
+    static Handle<Value> New(const Arguments &args);
+
+  private:
+    mpq_class val_;
+};
+
 #endif // NODE_GMP_H

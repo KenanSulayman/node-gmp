@@ -18,14 +18,15 @@ static int inside_gmp_call = 0;
   else (*sym) = (void *)func; \
 } while(0)
 
-#define evil_try_catch(code) do { \
+#define evil_try_catch(code, msg) do { \
+  assert(inside_gmp_call == 0); \
   if(sigsetjmp(gmp_sucks_env,0) == 0) { \
     inside_gmp_call = 1; \
     code \
     inside_gmp_call = 0; \
   } else { \
     inside_gmp_call = 0; \
-    return ThrowException(Exception::Error(String::New("gmp abort"))); \
+    return ThrowException(Exception::Error(String::New(msg))); \
   } \
 } while(0)
 
@@ -130,12 +131,13 @@ using namespace node;
     String::Utf8Value val(arg->ToString());                                      \
     char * num = t;                                                              \
     try {                                                                        \
-      i = num;                                                                   \
+      if(arg->IsNumber()) i = (double)arg->NumberValue();                        \
+      else i = num;                                                              \
     } catch (std::invalid_argument err) {                                        \
-      return ThrowException(Exception::TypeError(String::New("bad argument")));  \
+      node_gmp_replace_abort_cxx();                                              \
     }                                                                            \
   } else if (!(arg->IsUndefined() || arg->IsNull())) {                           \
-    return ThrowException(Exception::TypeError(String::New("bad argument")));    \
+    node_gmp_replace_abort_cxx();                                                \
   }
 
 
@@ -145,7 +147,7 @@ GInt::New(const Arguments &args) {
 
   mpz_class i = 0;
 
-  GETARG(args[0], strtok(*val, "."));
+  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
 
   GInt *g = new GInt(i);
   g->Wrap(args.This());
@@ -168,10 +170,10 @@ GInt::Add(const Arguments &args) {
 
   mpz_class i = 0;
 
-  GETARG(args[0], strtok(*val, "."));
+  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
-  evil_try_catch({ self->val_ += i; });
+  evil_try_catch({ self->val_ += i; }, "gmp abort");
   return args.This();
 }
 
@@ -181,10 +183,10 @@ GInt::Sub(const Arguments &args) {
 
   mpz_class i = 0;
 
-  GETARG(args[0], strtok(*val, "."));
+  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
-  evil_try_catch({ self->val_ -= i; });
+  evil_try_catch({ self->val_ -= i; }, "gmp abort");
 
   return args.This();
 }
@@ -195,10 +197,10 @@ GInt::Mul(const Arguments &args) {
 
   mpz_class i = 0;
 
-  GETARG(args[0], strtok(*val, "."));
+  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
-  evil_try_catch({ self->val_ *= i; });
+  evil_try_catch({ self->val_ *= i; }, "gmp abort");
 
   return args.This();
 }
@@ -209,10 +211,10 @@ GInt::Div(const Arguments &args) {
 
   mpz_class i = 0;
 
-  GETARG(args[0], strtok(*val, "."));
+  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
 
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
-  evil_try_catch({ self->val_ /= i; });
+  evil_try_catch({ self->val_ /= i; }, "gmp abort");
 
   return args.This();
 }
@@ -237,7 +239,7 @@ GInt::Pow(const Arguments &args) {
     self->val_ = mpz_class(c);
 
     mpz_clear(c);
-  });
+  }, "gmp abort");
 
   return args.This();
 }
@@ -249,7 +251,8 @@ GInt::ToString(const Arguments &args) {
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
   Local<String> str;
 
-  evil_try_catch({ str = String::New(self->val_.get_str(10).c_str()); });
+  evil_try_catch({ str = String::New(self->val_.get_str(10).c_str()); },
+                 "gmp abort");
   return scope.Close(str);
 }
 
@@ -260,7 +263,7 @@ GFloat::New(const Arguments &args) {
   if(args[1]->IsNumber()) i.set_prec(args[1]->Uint32Value());
   i = 0;
 
-  GETARG(args[0], *val);
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   GFloat *g = new GFloat(i);
   g->Wrap(args.This());
@@ -286,9 +289,9 @@ GFloat::Add(const Arguments &args) {
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
 
-  GETARG(args[0], *val);
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
-  evil_try_catch({ self->val_ += i; });
+  evil_try_catch({ self->val_ += i; }, "gmp abort");
 
   return args.This();
 }
@@ -301,9 +304,9 @@ GFloat::Sub(const Arguments &args) {
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
 
-  GETARG(args[0], *val);
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
-  evil_try_catch({ self->val_ -= i; });
+  evil_try_catch({ self->val_ -= i; }, "gmp abort");
 
   return args.This();
 }
@@ -316,9 +319,9 @@ GFloat::Mul(const Arguments &args) {
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
 
-  GETARG(args[0], *val);
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
-  evil_try_catch({ self->val_ *= i; });
+  evil_try_catch({ self->val_ *= i; }, "gmp abort");
 
   return args.This();
 }
@@ -331,9 +334,9 @@ GFloat::Div(const Arguments &args) {
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
 
-  GETARG(args[0], *val);
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
-  evil_try_catch({ self->val_ /= i; });
+  evil_try_catch({ self->val_ /= i; }, "gmp abort");
 
   return args.This();
 }
@@ -358,7 +361,7 @@ GFloat::Pow(const Arguments &args) {
     self->val_ = mpf_class(c);
     self->val_.set_prec(prec);
     mpf_clear(c);
-  });
+  }, "gmp abort");
 
   return args.This();
 }
@@ -380,7 +383,8 @@ GFloat::ToString(const Arguments &args) {
   long int i;
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   const char *unfixed = NULL;
-  evil_try_catch({ unfixed = self->val_.get_str(exp,10).c_str(); });
+  evil_try_catch({ unfixed = self->val_.get_str(exp,10).c_str(); },
+                 "gmp abort");
   char *buff = (char *)alloca(abs(exp) + 2 + strlen(unfixed));
   char *cp = buff;
   if(unfixed[0] == '-') { *cp++ = '-'; unfixed++; }
@@ -402,6 +406,141 @@ GFloat::ToString(const Arguments &args) {
   return scope.Close(val);
 }
 
+Handle<Value>
+GRational::New(const Arguments &args) {
+  HandleScope scope;
+  mpq_class i = 0;
+
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+
+  GRational *g = new GRational(i);
+  g->Wrap(args.This());
+  return args.This();
+}
+
+
+GRational::GRational(mpq_class val): ObjectWrap() {
+  val_ = val;
+}
+
+GRational::~GRational(){
+
+}
+
+
+Handle<Value>
+GRational::Add(const Arguments &args) {
+  HandleScope scope;
+
+  GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
+  mpq_class i = 0;
+
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+
+  evil_try_catch({ self->val_ += i; }, "gmp abort");
+
+  return args.This();
+}
+
+Handle<Value>
+GRational::Sub(const Arguments &args) {
+  HandleScope scope;
+
+  GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
+  mpq_class i = 0;
+
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+
+  evil_try_catch({ self->val_ -= i; }, "gmp abort");
+
+  return args.This();
+}
+
+Handle<Value>
+GRational::Mul(const Arguments &args) {
+  HandleScope scope;
+
+  GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
+  mpq_class i = 0;
+
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+
+  evil_try_catch({ self->val_ *= i; }, "gmp abort");
+
+  return args.This();
+}
+
+Handle<Value>
+GRational::Div(const Arguments &args) {
+  HandleScope scope;
+
+  GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
+  mpq_class i = 0;
+
+  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+
+  evil_try_catch({ self->val_ /= i; }, "gmp abort");
+
+  return args.This();
+}
+
+Handle<Value>
+GRational::Pow(const Arguments &args) {
+  HandleScope scope;
+
+  if (!args[0]->IsNumber()) {
+    return ThrowException(Exception::TypeError(String::New("exponent must be an int")));
+  }
+
+  GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
+
+  evil_try_catch({
+    mpz_t c;
+    mpz_t num;
+    mpz_t den;
+    mpz_init(c);
+    mpz_init(num);
+    mpz_init(den);
+    mpq_ptr n;
+
+    n = self->val_.get_mpq_t();
+
+    mpq_get_den(den, n);
+    mpq_get_num(num, n);
+    mpz_pow_ui(c, num, (long)args[0]->Int32Value());
+    mpq_set_num(n, c);
+
+    //self->val_ = mpq_class(mpz_class(c), mpz_class(den));
+    mpz_clear(c);
+    mpz_clear(num);
+    mpz_clear(den);
+  }, "gmp abort");
+
+  return args.This();
+}
+
+Handle<Value>
+GRational::ToNumber(const Arguments &args) {
+  HandleScope scope;
+  GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
+
+  self->val_.canonicalize();
+  Local<Number> val = Number::New(self->val_.get_d());
+
+  return scope.Close(val);
+}
+
+Handle<Value>
+GRational::ToString(const Arguments &args) {
+  HandleScope scope;
+  GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
+  const char *unfixed = NULL;
+  self->val_.canonicalize();
+  evil_try_catch({ unfixed = self->val_.get_str(10).c_str(); }, "gmp abort");
+  Local<String> val = String::New(unfixed);
+
+  return scope.Close(val);
+}
 
 
 void RegisterModule(Handle<Object> target) {
@@ -433,6 +572,20 @@ void RegisterModule(Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t_float, "toValue", GFloat::ToNumber);
 
   target->Set(String::NewSymbol("Float"), t_float->GetFunction());
+
+  Local<FunctionTemplate> t_rational = FunctionTemplate::New(GRational::New);
+  t_rational->InstanceTemplate()->SetInternalFieldCount(1);
+  t_rational->SetClassName(String::NewSymbol("GRational"));
+
+  NODE_SET_PROTOTYPE_METHOD(t_rational, "add", GRational::Add);
+  NODE_SET_PROTOTYPE_METHOD(t_rational, "sub", GRational::Sub);
+  NODE_SET_PROTOTYPE_METHOD(t_rational, "mul", GRational::Mul);
+  NODE_SET_PROTOTYPE_METHOD(t_rational, "div", GRational::Div);
+  NODE_SET_PROTOTYPE_METHOD(t_rational, "pow", GRational::Pow);
+  NODE_SET_PROTOTYPE_METHOD(t_rational, "toString", GRational::ToString);
+  NODE_SET_PROTOTYPE_METHOD(t_rational, "toValue", GRational::ToNumber);
+
+  target->Set(String::NewSymbol("Rational"), t_rational->GetFunction());
 
   /* rewire allocators to throw on OOM */
   rewire(__gmp_allocate_func, node_gmp_replace_allocate,
