@@ -1,6 +1,6 @@
-= node-gmp
+# node-gmp
 
-== synopsis
+## synopsis
 
 node-gmp wraps the libgmp library.  This library has some poor practices
 when it comes to erro handling, so much trickery and deception is used to
@@ -19,12 +19,12 @@ The rest of gmp is just code.
         var r = gmp.Rational("22/7");
         r.toString() // "3.142857142857143"
 
-== requirements
+## requirements
 
    * http://gmplib.org/ -- built with c++ enabled ( ./configure --enable-cxx )
 
 
-== installation
+## installation
 
       # (useful environment variables: CXXFLAGS LINKFLAGS)
       $ node-waf configure build
