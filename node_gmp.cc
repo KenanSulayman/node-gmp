@@ -305,6 +305,17 @@ GInt::Cmp(const Arguments &args) {
 }
 
 Handle<Value>
+GInt::ToNumber(const Arguments &args) {
+  HandleScope scope;
+  ENSURE(args.This(), GInt);
+  GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
+
+  Local<Number> val = Number::New(self->val_.get_d());
+
+  return scope.Close(val);
+}
+
+Handle<Value>
 GInt::ToString(const Arguments &args) {
   HandleScope scope;
 
@@ -454,6 +465,33 @@ GFloat::Pow(const Arguments &args) {
     mpf_clear(c);
   }, "gmp abort");
 
+  return args.This();
+}
+
+Handle<Value>
+GFloat::Sqrt(const Arguments &args) {
+  HandleScope scope;
+  ENSURE(args.This(), GFloat);
+  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
+  evil_try_catch({ self->val_ = sqrt(self->val_); }, "gmp abort");
+  return args.This();
+}
+
+Handle<Value>
+GFloat::Ceil(const Arguments &args) {
+  HandleScope scope;
+  ENSURE(args.This(), GFloat);
+  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
+  evil_try_catch({ self->val_ = ceil(self->val_); }, "gmp abort");
+  return args.This();
+}
+
+Handle<Value>
+GFloat::Floor(const Arguments &args) {
+  HandleScope scope;
+  ENSURE(args.This(), GFloat);
+  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
+  evil_try_catch({ self->val_ = floor(self->val_); }, "gmp abort");
   return args.This();
 }
 
@@ -733,6 +771,7 @@ void RegisterModule(Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t_int, "pow", GInt::Pow);
   NODE_SET_PROTOTYPE_METHOD(t_int, "cmp", GInt::Cmp);
   NODE_SET_PROTOTYPE_METHOD(t_int, "toString", GInt::ToString);
+  NODE_SET_PROTOTYPE_METHOD(t_int, "toValue", GInt::ToNumber);
 
   target->Set(String::NewSymbol("Int"), t_int->GetFunction());
 
@@ -746,6 +785,9 @@ void RegisterModule(Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t_float, "div", GFloat::Div);
   NODE_SET_PROTOTYPE_METHOD(t_float, "pow", GFloat::Pow);
   NODE_SET_PROTOTYPE_METHOD(t_float, "cmp", GFloat::Cmp);
+  NODE_SET_PROTOTYPE_METHOD(t_float, "sqrt", GFloat::Sqrt);
+  NODE_SET_PROTOTYPE_METHOD(t_float, "ceil", GFloat::Ceil);
+  NODE_SET_PROTOTYPE_METHOD(t_float, "floor", GFloat::Floor);
   NODE_SET_PROTOTYPE_METHOD(t_float, "toString", GFloat::ToString);
   NODE_SET_PROTOTYPE_METHOD(t_float, "toValue", GFloat::ToNumber);
 

@@ -24,6 +24,7 @@ class GInt: public node::ObjectWrap {
     static Handle<Value> Pow(const Arguments &args);
     static Handle<Value> Cmp(const Arguments &args);
     static Handle<Value> ToString(const Arguments &args);
+    static Handle<Value> ToNumber(const Arguments &args);
 
     static Handle<Value> New(const Arguments &args);
 
@@ -41,6 +42,9 @@ class GFloat: public node::ObjectWrap {
     static Handle<Value> Div(const Arguments &args);
     static Handle<Value> Pow(const Arguments &args);
     static Handle<Value> Cmp(const Arguments &args);
+    static Handle<Value> Sqrt(const Arguments &args);
+    static Handle<Value> Ceil(const Arguments &args);
+    static Handle<Value> Floor(const Arguments &args);
     static Handle<Value> ToString(const Arguments &args);
     static Handle<Value> ToNumber(const Arguments &args);
 
