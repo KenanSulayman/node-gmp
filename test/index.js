@@ -109,6 +109,7 @@ try {
 } catch(e) {
   assert.equal(e+"", "Error: gmp abort");
 }
+console.log("^^^^^^^^^^^^^^^^^^^^^^^^^ <- libgmp prints to stderr");
 
 
 // chaining
@@ -124,5 +125,11 @@ assert.equal("923054160315059.179814765320867",
 assert.equal("5/2", new gmp.Rational(2.5).toString());
 assert.equal("3/2", new gmp.Rational("6/4").toString());
 assert.equal("2.5", new gmp.Rational(2.5).toValue());
+assert.equal(1, new gmp.Float("1000000000000000000000000.0")
+                       .cmp(new gmp.Float("1000000000000000000000000.1")));
+assert.equal(0, new gmp.Float("1000000000000000000000000.1")
+                       .cmp(new gmp.Float("1000000000000000000000000.1")));
+assert.equal(-1, new gmp.Int("1").cmp(new gmp.Int("-1")));
 
+assert.equal(0, new gmp.Rational("10/2").cmp(new gmp.Rational("5")));
 assert.equal("3.142857142857143", new gmp.Rational("22/7").toValue());

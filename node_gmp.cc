@@ -619,6 +619,31 @@ GRational::Pow(const Arguments &args) {
 }
 
 Handle<Value>
+GRational::Cmp(const Arguments &args) {
+  HandleScope scope;
+
+  mpf_class i = 0;
+  int result = 0;
+
+  ENSURE(args.This(), GRational);
+  GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
+
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GRational);
+    GRational *other = ObjectWrap::Unwrap<GRational>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+
+  evil_try_catch({ if(self->val_ < i) result = 1;
+                   else if(self->val_ > i) result = -1; }, "gmp abort");
+
+  Local<Number> val = Number::New(result);
+  return scope.Close(val);
+}
+
+Handle<Value>
 GRational::ToNumber(const Arguments &args) {
   HandleScope scope;
   ENSURE(args.This(), GRational);
@@ -670,6 +695,7 @@ void RegisterModule(Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t_float, "mul", GFloat::Mul);
   NODE_SET_PROTOTYPE_METHOD(t_float, "div", GFloat::Div);
   NODE_SET_PROTOTYPE_METHOD(t_float, "pow", GFloat::Pow);
+  NODE_SET_PROTOTYPE_METHOD(t_float, "cmp", GFloat::Cmp);
   NODE_SET_PROTOTYPE_METHOD(t_float, "toString", GFloat::ToString);
   NODE_SET_PROTOTYPE_METHOD(t_float, "toValue", GFloat::ToNumber);
 
@@ -684,6 +710,7 @@ void RegisterModule(Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t_rational, "mul", GRational::Mul);
   NODE_SET_PROTOTYPE_METHOD(t_rational, "div", GRational::Div);
   NODE_SET_PROTOTYPE_METHOD(t_rational, "pow", GRational::Pow);
+  NODE_SET_PROTOTYPE_METHOD(t_rational, "cmp", GRational::Cmp);
   NODE_SET_PROTOTYPE_METHOD(t_rational, "toString", GRational::ToString);
   NODE_SET_PROTOTYPE_METHOD(t_rational, "toValue", GRational::ToNumber);
 
