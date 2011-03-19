@@ -326,6 +326,7 @@ GFloat::New(const Arguments &args) {
 
   evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
+  ENSURE(args.This(), GFloat);
   GFloat *g = new GFloat(i);
   g->Wrap(args.This());
   return args.This();
@@ -351,7 +352,13 @@ GFloat::Add(const Arguments &args) {
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
 
-  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GFloat);
+    GFloat *other = ObjectWrap::Unwrap<GFloat>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   evil_try_catch({ self->val_ += i; }, "gmp abort");
 
@@ -367,7 +374,13 @@ GFloat::Sub(const Arguments &args) {
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
 
-  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GFloat);
+    GFloat *other = ObjectWrap::Unwrap<GFloat>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   evil_try_catch({ self->val_ -= i; }, "gmp abort");
 
@@ -383,7 +396,13 @@ GFloat::Mul(const Arguments &args) {
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
 
-  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GFloat);
+    GFloat *other = ObjectWrap::Unwrap<GFloat>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   evil_try_catch({ self->val_ *= i; }, "gmp abort");
 
@@ -399,7 +418,13 @@ GFloat::Div(const Arguments &args) {
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
 
-  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GFloat);
+    GFloat *other = ObjectWrap::Unwrap<GFloat>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   evil_try_catch({ self->val_ /= i; }, "gmp abort");
 
@@ -507,6 +532,7 @@ GRational::New(const Arguments &args) {
 
   evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
+  ENSURE(args.This(), GRational);
   GRational *g = new GRational(i);
   g->Wrap(args.This());
   return args.This();
@@ -530,7 +556,13 @@ GRational::Add(const Arguments &args) {
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   mpq_class i = 0;
 
-  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GRational);
+    GRational *other = ObjectWrap::Unwrap<GRational>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   evil_try_catch({ self->val_ += i; }, "gmp abort");
 
@@ -545,7 +577,13 @@ GRational::Sub(const Arguments &args) {
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   mpq_class i = 0;
 
-  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GRational);
+    GRational *other = ObjectWrap::Unwrap<GRational>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   evil_try_catch({ self->val_ -= i; }, "gmp abort");
 
@@ -560,7 +598,13 @@ GRational::Mul(const Arguments &args) {
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   mpq_class i = 0;
 
-  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GRational);
+    GRational *other = ObjectWrap::Unwrap<GRational>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   evil_try_catch({ self->val_ *= i; }, "gmp abort");
 
@@ -575,7 +619,13 @@ GRational::Div(const Arguments &args) {
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   mpq_class i = 0;
 
-  evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GRational);
+    GRational *other = ObjectWrap::Unwrap<GRational>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
   evil_try_catch({ self->val_ /= i; }, "gmp abort");
 
