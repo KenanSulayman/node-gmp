@@ -11,6 +11,8 @@
 
 #include "node_gmp.h"
 
+#define ENSURE(a,t) do { if(!(a)->IsObject() || !(a)->ToObject()->ObjectProtoToString()->Equals(String::New("[object " #t "]"))) return ThrowException(Exception::TypeError(String::New("bad argument"))); } while(0)
+
 static int inside_gmp_call = 0;
 #define rewire(symbol, func, block) do { \
   void **sym = (void **)dlsym(RTLD_DEFAULT, #symbol); \
@@ -147,6 +149,8 @@ GInt::New(const Arguments &args) {
 
   mpz_class i = 0;
 
+  ENSURE(args.This(), GInt);
+
   evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
 
   GInt *g = new GInt(i);
@@ -167,12 +171,19 @@ GInt::~GInt(){
 Handle<Value>
 GInt::Add(const Arguments &args) {
   HandleScope scope;
-
   mpz_class i = 0;
 
-  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
-
+  ENSURE(args.This(), GInt);
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
+
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GInt);
+    GInt *other = ObjectWrap::Unwrap<GInt>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
+
   evil_try_catch({ self->val_ += i; }, "gmp abort");
   return args.This();
 }
@@ -183,9 +194,17 @@ GInt::Sub(const Arguments &args) {
 
   mpz_class i = 0;
 
-  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
-
+  ENSURE(args.This(), GInt);
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
+
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GInt);
+    GInt *other = ObjectWrap::Unwrap<GInt>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
+
   evil_try_catch({ self->val_ -= i; }, "gmp abort");
 
   return args.This();
@@ -197,9 +216,17 @@ GInt::Mul(const Arguments &args) {
 
   mpz_class i = 0;
 
-  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
-
+  ENSURE(args.This(), GInt);
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
+
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GInt);
+    GInt *other = ObjectWrap::Unwrap<GInt>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
+
   evil_try_catch({ self->val_ *= i; }, "gmp abort");
 
   return args.This();
@@ -211,8 +238,15 @@ GInt::Div(const Arguments &args) {
 
   mpz_class i = 0;
 
-  evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GInt);
+    GInt *other = ObjectWrap::Unwrap<GInt>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
 
+  ENSURE(args.This(), GInt);
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
   evil_try_catch({ self->val_ /= i; }, "gmp abort");
 
@@ -227,6 +261,7 @@ GInt::Pow(const Arguments &args) {
     return ThrowException(Exception::TypeError(String::New("exponent must be an int")));
   }
 
+  ENSURE(args.This(), GInt);
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
 
   evil_try_catch({
@@ -245,9 +280,35 @@ GInt::Pow(const Arguments &args) {
 }
 
 Handle<Value>
+GInt::Cmp(const Arguments &args) {
+  HandleScope scope;
+
+  mpz_class i = 0;
+  int result = 0;
+
+  ENSURE(args.This(), GInt);
+  GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
+
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GInt);
+    GInt *other = ObjectWrap::Unwrap<GInt>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], strtok(*val, ".")); }, "bad argument");
+
+  evil_try_catch({ if(self->val_ < i) result = 1;
+                   else if(self->val_ > i) result = -1; }, "gmp abort");
+
+  Local<Number> val = Number::New(result);
+  return scope.Close(val);
+}
+
+Handle<Value>
 GInt::ToString(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GInt);
   GInt *self = ObjectWrap::Unwrap<GInt>(args.This());
   Local<String> str;
 
@@ -285,6 +346,7 @@ Handle<Value>
 GFloat::Add(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GFloat);
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
@@ -300,6 +362,7 @@ Handle<Value>
 GFloat::Sub(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GFloat);
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
@@ -315,6 +378,7 @@ Handle<Value>
 GFloat::Mul(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GFloat);
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
@@ -330,6 +394,7 @@ Handle<Value>
 GFloat::Div(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GFloat);
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   mpf_class i = 0;
   i.set_prec(self->val_.get_prec());
@@ -349,6 +414,7 @@ GFloat::Pow(const Arguments &args) {
     return ThrowException(Exception::TypeError(String::New("exponent must be an int")));
   }
 
+  ENSURE(args.This(), GFloat);
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
 
   evil_try_catch({
@@ -367,8 +433,35 @@ GFloat::Pow(const Arguments &args) {
 }
 
 Handle<Value>
+GFloat::Cmp(const Arguments &args) {
+  HandleScope scope;
+
+  mpf_class i = 0;
+  int result = 0;
+
+  ENSURE(args.This(), GFloat);
+  GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
+
+  if(args[0]->IsObject()) {
+    ENSURE(args[0], GFloat);
+    GFloat *other = ObjectWrap::Unwrap<GFloat>(args[0]->ToObject());
+    i = other->val_;
+  }
+  else
+    evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
+
+  evil_try_catch({ if(self->val_ < i) result = 1;
+                   else if(self->val_ > i) result = -1; }, "gmp abort");
+
+  Local<Number> val = Number::New(result);
+  return scope.Close(val);
+}
+
+
+Handle<Value>
 GFloat::ToNumber(const Arguments &args) {
   HandleScope scope;
+  ENSURE(args.This(), GFloat);
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
 
   Local<Number> val = Number::New(self->val_.get_d());
@@ -381,6 +474,7 @@ GFloat::ToString(const Arguments &args) {
   HandleScope scope;
   mp_exp_t exp;
   long int i;
+  ENSURE(args.This(), GFloat);
   GFloat *self = ObjectWrap::Unwrap<GFloat>(args.This());
   const char *unfixed = NULL;
   evil_try_catch({ unfixed = self->val_.get_str(exp,10).c_str(); },
@@ -432,6 +526,7 @@ Handle<Value>
 GRational::Add(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GRational);
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   mpq_class i = 0;
 
@@ -446,6 +541,7 @@ Handle<Value>
 GRational::Sub(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GRational);
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   mpq_class i = 0;
 
@@ -460,6 +556,7 @@ Handle<Value>
 GRational::Mul(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GRational);
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   mpq_class i = 0;
 
@@ -474,6 +571,7 @@ Handle<Value>
 GRational::Div(const Arguments &args) {
   HandleScope scope;
 
+  ENSURE(args.This(), GRational);
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   mpq_class i = 0;
 
@@ -492,6 +590,7 @@ GRational::Pow(const Arguments &args) {
     return ThrowException(Exception::TypeError(String::New("exponent must be an int")));
   }
 
+  ENSURE(args.This(), GRational);
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
 
   evil_try_catch({
@@ -522,6 +621,7 @@ GRational::Pow(const Arguments &args) {
 Handle<Value>
 GRational::ToNumber(const Arguments &args) {
   HandleScope scope;
+  ENSURE(args.This(), GRational);
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
 
   self->val_.canonicalize();
@@ -533,6 +633,7 @@ GRational::ToNumber(const Arguments &args) {
 Handle<Value>
 GRational::ToString(const Arguments &args) {
   HandleScope scope;
+  ENSURE(args.This(), GRational);
   GRational *self = ObjectWrap::Unwrap<GRational>(args.This());
   const char *unfixed = NULL;
   self->val_.canonicalize();
@@ -555,6 +656,7 @@ void RegisterModule(Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t_int, "mul", GInt::Mul);
   NODE_SET_PROTOTYPE_METHOD(t_int, "div", GInt::Div);
   NODE_SET_PROTOTYPE_METHOD(t_int, "pow", GInt::Pow);
+  NODE_SET_PROTOTYPE_METHOD(t_int, "cmp", GInt::Cmp);
   NODE_SET_PROTOTYPE_METHOD(t_int, "toString", GInt::ToString);
 
   target->Set(String::NewSymbol("Int"), t_int->GetFunction());
