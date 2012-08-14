@@ -8,6 +8,7 @@
 #include <alloca.h>
 #include <errno.h>
 #include <setjmp.h>
+#include <stdlib.h>
 
 #include "node_gmp.h"
 
