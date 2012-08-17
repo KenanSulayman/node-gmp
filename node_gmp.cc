@@ -725,8 +725,8 @@ GRational::Cmp(const Arguments &args) {
   else
     evil_try_catch({ GETARG(args[0], *val); }, "bad argument");
 
-  evil_try_catch({ if(self->val_ < i) result = 1;
-                   else if(self->val_ > i) result = -1; }, "gmp abort");
+  evil_try_catch({ if(self->val_ < i) result = -1;
+                   else if(self->val_ > i) result = 1; }, "gmp abort");
 
   Local<Number> val = Number::New(result);
   return scope.Close(val);
