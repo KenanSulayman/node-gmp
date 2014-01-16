@@ -1,5 +1,4 @@
-*.swp
-build/*
+*.node
+*.o
 .lock-wscript
-oldstuff.cc
-gmp.cc.1
+build
